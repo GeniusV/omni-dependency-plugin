@@ -1,0 +1,225 @@
+/*{
+    "type": "action",
+    "targets": ["omnifocus"],
+    "author": "GeniusV",
+    "identifier": "com.geniusver.dependency-setup",
+    "version": "1.0.3",
+    "description": "Dependency Setup",
+    "label": "Dependency Setup",
+    "shortLabel": "Dependency Setup"
+}*/
+
+/**
+ * Change log:
+ * v1.0.3 - 2021-02010
+ * - add Auto Cleanup to remove Dependency tag
+ *
+ * v1.0.2 - 2021-02-08
+ * - fix "Tag invalid"  issue on iPhone
+ *
+ */
+(() => {
+    var dependencyTag = function () {
+        return tagNamed("Dependency")
+
+    }
+    var dependOnTag = function (){
+        return tagNamed("Task").tagNamed("Depend On")
+    }
+    let completedTask = []
+    let autoCleanup = true
+    var logFormResult = function (key, formObject) {
+        console.log(key, formObject.values[key])
+    };
+    var append = function (arr1, arr2) {
+        res = []
+        if (arr1 != null) {
+            arr1.forEach(function (item) {
+                res.push(item)
+            })
+        }
+        if (arr2 != null) {
+            arr2.forEach(function (item) {
+                res.push(item)
+            })
+        }
+        return res
+    }
+    var checkDependOnTask = function (dependOnTask) {
+        if (dependOnTask.parent == null) {
+            dependOnTask.markComplete()
+            completedTask.push(buildName(dependOnTask))
+            return
+        }
+        dependencyTasks = getDependOnTaskNoteDependency(dependOnTask)
+        remainingDependencyTask = dependencyTasks.filter(function (dependency) {
+            return (dependency.taskStatus != Task.Status.Completed) &&
+                (dependency.taskStatus != Task.Status.Dropped)
+        })
+        if (remainingDependencyTask.length == 0) {
+            dependOnTask.markComplete()
+            completedTask.push(buildName(dependOnTask.parent))
+            return
+        }
+        processDependOnTask(dependOnTask.parent, dependOnTask, remainingDependencyTask)
+    }
+    var checkDependency = function () {
+        dependOnTag().remainingTasks.forEach(function (dependOnTask) {
+            checkDependOnTask(dependOnTask)
+        })
+        let str = completedTask.join("\n")
+        if (completedTask.length > 0) {
+            new Alert("Following Available", str).show()
+        }
+    }
+    var getDependOnTaskNoteDependency = function (task) {
+        var re = /omnifocus:\/\/\/task\/(.*)/g;
+        var arr = [...task.note.matchAll(re)]
+        if (arr == null) {
+            return []
+        }
+        var res = []
+        arr.forEach(function (item) {
+            id = item[1]
+            if (Task.byIdentifier(id)) {
+                res.push(Task.byIdentifier(id))
+            }
+        })
+        return res
+    }
+    var getTaskDependency = function (task) {
+        let dependOnTesks = getDependOnTask(task)
+        if (dependOnTesks.length == 0) {
+            return []
+        }
+        let dependencyTasks = []
+        dependOnTesks.forEach(function (dependOnTask) {
+            dependencyTasks = append(dependencyTasks, getDependOnTaskNoteDependency(dependOnTask))
+        })
+        return dependencyTasks
+    }
+    var buildName = function (task) {
+        taskName = task.name
+        if (task.containingProject) {
+            taskName += " : " + task.containingProject.name
+        } else {
+            taskName += " : Inbox"
+        }
+        return taskName
+    }
+    var displayForm = function (tasks) {
+        exampleForm = new Form()
+        dependencyTasks = getDependencyTasks()
+        console.log("dependencyTasks", dependencyTasks)
+        tasks.forEach(function (task) {
+            taskDependency = new Array()
+            taskDependency = getTaskDependency(task);
+            taskDependency = append(taskDependency, dependencyTasks)
+            names = []
+            taskDependency.forEach(function (dependOnTask) {
+                names.push(buildName(dependOnTask))
+            })
+            console.log("total dependcy", task, taskDependency)
+            exampleForm.addField(new Form.Field.MultipleOptions(task.id.primaryKey, task.name + " depends on", taskDependency, names, taskDependency))
+        })
+        exampleForm.addField(new Form.Field.Checkbox("autoCleanup", "Auto Cleanup", true))
+        formPromise = exampleForm.show("Setup Dependency", "Go")
+        formPromise.then(function (formObject) {
+            autoCleanup = formObject.values["autoCleanup"]
+            tasks.forEach(function (task) {
+                logFormResult(task.id.primaryKey, formObject)
+                setupDependency(task, formObject.values[task.id.primaryKey])
+            })
+        })
+        formPromise.catch(function (error) {
+            console.log(err)
+            new Alert("Form Error", err).show()
+        })
+    }
+    var getDependOnTask = function (task) {
+        children = task.children
+        if (children.length == 0) {
+            return []
+        }
+        dependOnChildren = children.filter(function (child) {
+            console.log("task", child, child.tags.includes(dependOnTag()))
+            return child.tags.includes(dependOnTag())
+        })
+        res = children.filter(function (child) {
+            return (child.taskStatus != Task.Status.Completed) &&
+                (child.taskStatus != Task.Status.Dropped)
+        })
+        return res
+    }
+    var getDependencyTasks = function () {
+        return dependencyTag().remainingTasks
+    }
+    var initDependOnTask = function (task) {
+        dependOnTask = new Task("depend on task", task)
+        dependOnTask.clearTags()
+        dependOnTask.addTag(dependOnTag())
+        return dependOnTask
+    }
+    var processDependOnTask = function (task, dependOnTask, dependencyTasks) {
+        note = "depend on: \n\n"
+        dependencyTaskNames = []
+        dependencyTasks.forEach(function (dependency) {
+            dependencyTaskNames.push(dependency.name)
+            note += buildName(dependency) + "\n" +
+                "omnifocus:///task/" + dependency.id.primaryKey + "\n\n"
+        })
+        title = "[" + buildName(task) + "] depend on: " + dependencyTaskNames.join(", ")
+        dependOnTask.name = title
+        dependOnTask.note = note
+    }
+    var setupDependency = function (task, dependencyTasks) {
+        console.log("setupDependency -----", task, dependencyTasks)
+        if (dependencyTasks == null) {
+            dependencyTasks = []
+        }
+        dependOnTasks = getDependOnTask(task)
+        console.log("dependOnTasks", dependOnTasks)
+        dependOnTask = null
+        if (dependOnTasks.length == 0) {
+            dependOnTask = initDependOnTask(task)
+            console.log("initDependOnTask")
+        } else {
+            dependOnTask = dependOnTasks[0]
+        }
+        if (dependencyTasks.length == 0) {
+            console.log("markComplete")
+            dependOnTask.markComplete()
+            completedTask.push(buildName(task))
+            return
+        }
+        if (dependOnTasks.length > 0) {
+            for (let i = 1; i < dependOnTasks.length; i++) {
+                dependOnTasks[i].drop()
+            }
+        }
+        console.log("processDependOnTask", task, dependOnTask, dependencyTasks)
+        processDependOnTask(task, dependOnTask, dependencyTasks)
+        if (autoCleanup) {
+            dependencyTasks.forEach(function (dependency) {
+                dependency.removeTag(dependencyTag())
+            });
+        }
+    }
+    var action = new PlugIn.Action(function (selection, sender) {
+        console.log("action start ----------")
+        // action code
+        // selection options: tasks, projects, folders, tags
+        checkDependency()
+        if (selection.tasks.length > 0) {
+            displayForm(selection.tasks)
+        }
+        console.log("completed", completedTask)
+    });
+
+    action.validate = function (selection, sender) {
+        // validation code
+        // selection options: tasks, projects, folders, tags
+        return true
+    };
+    return action;
+})();
