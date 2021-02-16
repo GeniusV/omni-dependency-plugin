@@ -43,6 +43,8 @@ dependency tasks. Select / unselect dependency tasks you want and press `Go`. De
 2. An Alert will pop up and tell you that task A is now available.
 
 ### Dependency Management
+You can add or remove dependency tasks. If you want to add dependency task, tag dependency tasks with `Dependency` first.
+Then follow [Setup dependency](#setup-dependency-task-a-depend-on-b) to select/unselect dependency tasks that you want to add/remove.
 
 ### Auto cleanup
 
