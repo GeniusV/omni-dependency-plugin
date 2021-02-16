@@ -32,12 +32,14 @@ For example, you want to mark action B depend on action A, which means A is not 
 
 1. Mark task B with tag `Dependency`
 2. Select task A and run plugin
-3. A Form will come up with dependency info
+3. A Form will come up with dependency info. These actions are either actions tagged with `Dependency` or existed 
+dependency tasks. Select / unselect dependency tasks you want and press `Go`. Default all selected.
 4. A task tagged with `Depend on` will be created as a child of task A. So task A will not be available until its children completed.
- 
+`Dependency` tag on task A was also being removed.
+
 ### Dependency on complete: task A become available after task B is done.
 
-1. After task B is complete, run plugin again
+1. After the task B is complete, run plugin again
 2. An Alert will pop up and tell you that task A is now available.
 
 ### Dependency Management
