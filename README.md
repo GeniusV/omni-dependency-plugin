@@ -48,3 +48,10 @@ Then follow [Setup dependency](#setup-dependency-task-a-depend-on-b) to select/u
 
 ### Auto cleanup
 
+The `Auto Complete` check box in form decides if `Dependency` tag will be removed after setup dependency task.
+
+If `Auto Complete` is selected (default), after some tasks had been set to depend on the actions with `Dependency` tag, 
+`Dependency` tag will be removed from these dependency tasks.   
+If `Auto Complete` is unselected, `Dependency` tags will not be remove after setup dependency task.
+
+This is useful when multiple tasks in different project depend on one task. It is more convenient than tag actions again and again.
