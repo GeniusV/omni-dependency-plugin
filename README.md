@@ -4,6 +4,7 @@
 - multi-to-multi dependency setup.
 - Projects and tasks can depend on each other.
 - Noninvasive, will not modify the original task. Only two extra tags required.
+- Convenient navigation links recorded in note to check remaining actions need to complete.
 
 ## Install
 Open `dependency-setup.omnijs` with omnifocus.
@@ -48,10 +49,33 @@ Then follow [Setup dependency](#setup-dependency-task-a-depend-on-b) to select/u
 
 ### Auto cleanup
 
-The `Auto Complete` check box in form decides if `Dependency` tag will be removed after setup dependency task.
+The `Auto Complete` checkbox in form decides if `Dependency` tag will be removed after setup dependency task.
 
 If `Auto Complete` is selected (default), after some tasks had been set to depend on the actions with `Dependency` tag, 
 `Dependency` tag will be removed from these dependency tasks.   
 If `Auto Complete` is unselected, `Dependency` tags will not be remove after setup dependency task.
 
 This is useful when multiple tasks in different project depend on one task. It is more convenient than tag actions again and again.
+
+## How it works
+The plugin involves two function:
+- dependency setup
+- dependency check
+
+### Dependency setup
+Firstly, we collect all reference actions and put them on form for you to check. These actions are from:  
+- actions tagged with `Dependency` tag.
+- existed dependency actions of selected action by read and process child `Depend On` action.  
+
+After user submits form, we create or update `Depend On` action as a child of selected action. Title and note of `Depend On`
+action will be regenerated.
+
+### Dependency check
+
+1. Collection all tasks tagged with `Depend On`
+2. For each task, get their dependency actions and check if any of them is complete. 
+If all dependency actions completed or dropped, complete current `Depend On` action and its parent action will become available.
+Otherwise, regenerate title and note of current `Depend On` action with uncompleted dependency tasks.
+
+>Note: Dependency check will always process whether you select a task or not. If you select a task, dependency check will
+execute before generates the form.
